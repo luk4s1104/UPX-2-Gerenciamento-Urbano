@@ -15,7 +15,6 @@ app.post('/teste',(req, res)=>{
     message: "Dados do gerenciamento urbano recebidos no backend!",
     dados: dadosRecebidos 
     });
-    console.log('nigaa!')
 })
 
 app.listen(port, ()=>{
