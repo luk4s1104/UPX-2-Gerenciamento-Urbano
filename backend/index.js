@@ -5,6 +5,8 @@ const app = express()
 const port = 3000
 
 app.use(cors())
+//dentro dos () voce coloca as configurações de quem esta liberado a acessar a API.
+//no caso do projeto real teremos que configurar para apenas o site ser liberado
 app.use(express.json())
 
 app.post('/teste',(req, res)=>{
