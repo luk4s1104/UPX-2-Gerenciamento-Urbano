@@ -94,6 +94,7 @@ a:hover {
 input[type="checkbox"] {
     margin-right: 5px;
     accent-color: #4a7a82;
+    align-items: center;
 }
 
 /* Botões */
