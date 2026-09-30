@@ -1,18 +1,19 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
-    <link rel="stylesheet" href="..//styles/authstyle.css">
+    <link rel="stylesheet" href="../styles/authstyle.css">
+    <script type="module" src="../scripts/login.js"></script>
 </head>
 <body>
     <div id="content">
         <h1>USER LOGIN</h1>
         <div id="loginBox">
-            <form action="#" method="post">
+            <form action="#" method="post" id="login-form">
                 <input name="email" id="email" type="text" placeholder="Email">
-                <input name="password" id="email" type="text" placeholder="Senha">
+                <input name="password" id="password" type="password" placeholder="Senha">
                 <div class="options-container">
                     <div>
                         <input name="rememberMe" id="rememberMe" type="checkbox">
@@ -23,7 +24,12 @@
                 <button type="submit">Login</button>
             </form>
         </div>
-        <button>REGISTER</button>
+
+        <button id="btn-ir-registro">REGISTER</button>
+        <br>
+        <button id="btn-ir-logout">LOGOUT</button>
+        <br>
+        <button id="btn-ir-home">HOME</button>
         
     </div>
 </body>
