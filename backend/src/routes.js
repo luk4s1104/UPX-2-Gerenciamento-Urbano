@@ -7,11 +7,12 @@ app.use(express.json())
 app.use(cors())
 
 app.post('/register', async (req, res)=>{
-    const { name, email, password} = req.body
+    const { name, email, password, localization} = req.body
     try {
         const userRecord = await auth.createUser({
             email: email,
             password: password,
+            localization: localization,
             displayName: name,
         })
 
