@@ -9,6 +9,9 @@
  */
 import { ler, salvar, gerarId, simularLatencia } from './storage.js';
 
+import { auth } from "../config/firebase.js";
+import { signInWithEmailAndPassword } from "https://gstatic.com";
+
 const CHAVE_SESSAO = 'cidadeMelhor:sessao';
 
 /** Calcula o hash SHA-256 de um texto usando a API de criptografia do navegador. */
@@ -61,18 +64,49 @@ export function ehGestor(usuario = usuarioAtual()) {
 /* ---------- Ações ---------- */
 
 export async function entrar(email, senha, lembrar = false) {
-  await simularLatencia(400);
-  const usuarios = ler('usuarios', []);
-  const usuario = usuarios.find((item) => item.email.toLowerCase() === email.trim().toLowerCase());
-  const hash = await gerarHash(senha);
+  try {
+    // 1. Faz o login no Firebase com e-mail e senha
+    const credencialUsuario = await signInWithEmailAndPassword(auth, email, senha);
+    const usuarioFirebase = credencialUsuario.user;
 
-  // Mensagem genérica de propósito: não revelamos se o e-mail existe.
-  if (!usuario || usuario.senhaHash !== hash) {
-    throw new Error('E-mail ou senha incorretos.');
+    // 2. Procura se esse usuário já existe no armazenamento simulado do site
+    const usuarios = ler('usuarios', []);
+    let usuarioLocal = usuarios.find((item) => item.email.toLowerCase() === email.trim().toLowerCase());
+
+    // Se o usuário não existir localmente no navegador (ex: foi criado direto no console do Firebase), cria o registro dele
+    if (!usuarioLocal) {
+      usuarioLocal = {
+        id: usuarioFirebase.uid, // Usa o ID real gerado pelo Firebase
+        nome: usuarioFirebase.displayName || email.split('@')[0],
+        email: email.trim().toLowerCase(),
+        perfil: email.includes('gestor') ? 'gestor' : 'cidadao',
+        criadoEm: new Date().toISOString(),
+      };
+      usuarios.push(usuarioLocal);
+      salvar('usuarios', usuarios);
+    }
+
+    // 3. Salva a sessão para o resto do site saber que ele está logado
+    salvarSessao(usuarioLocal.id, lembrar);
+    
+    return semSenha(usuarioLocal);
+
+  } catch (error) {
+    console.error("Erro Firebase Auth:", error.code);
+    
+    // 4. Converte os erros do Firebase para as mensagens de erro que seu formulário HTML já exibe
+    if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
+      throw new Error('E-mail ou senha incorretos.');
+    } else if (error.code === "auth/invalid-email") {
+      throw new Error('O formato do e-mail digitado é inválido.');
+    } else if (error.code === "auth/too-many-requests") {
+      throw new Error('Muitas tentativas bloqueadas. Tente novamente mais tarde.');
+    } else {
+      throw new Error('Não foi possível conectar ao servidor de autenticação.');
+    }
   }
-  salvarSessao(usuario.id, lembrar);
-  return semSenha(usuario);
 }
+
 
 export async function emailJaCadastrado(email) {
   const usuarios = ler('usuarios', []);
