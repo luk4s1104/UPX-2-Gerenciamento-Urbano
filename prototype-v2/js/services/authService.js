@@ -1,12 +1,11 @@
 /**
  * AUTENTICAÇÃO (INTEGRADA AO FIREBASE)
  */
+import { createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js'
+import { doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js'
+import { db } from "../config/firebase.js"
+import { auth } from "../config/firebase.js"
 import { ler, salvar, gerarId, simularLatencia } from './storage.js';
-
-import { auth, db } from "../config/firebase.js";
-import { signInWithEmailAndPassword, createUserWithEmailAndPassword, updateProfile } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js";
-// 1. IMPORTANTE: Adicionamos a importação das funções do Firestore abaixo
-import { doc, setDoc } from "https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js";
 
 const CHAVE_SESSAO = 'cidadeMelhor:sessao';
 
@@ -100,52 +99,23 @@ export async function emailJaCadastrado(email) {
 }
 
 export async function cadastrar({ nome, email, senha }) {
-  try {
-    // 1. Cria o usuário no Firebase Authentication
-    const credencialUsuario = await createUserWithEmailAndPassword(auth, email, senha);
-    const usuarioFirebase = credencialUsuario.user;
-
-    // 2. Salva o nome real do usuário dentro do perfil do Firebase (displayName)
-    await updateProfile(usuarioFirebase, {
-      displayName: nome.trim()
-    });
-
-    // 3. NOVO: Salva os dados na coleção 'users' do Firestore usando o UID real dele
-    await setDoc(doc(db, "users", usuarioFirebase.uid), {
-      name: nome.trim(),
-      email: email.trim().toLowerCase(),
-      password: senha // Salva a senha para manter compatibilidade com o documento Cleiton Jesus do print
-    });
-
-    // 4. Registra o espelho no armazenamento simulado local
-    const usuarios = ler('usuarios', []);
-    const novoUsuario = {
-      id: usuarioFirebase.uid,
-      nome: nome.trim(),
-      email: email.trim().toLowerCase(),
-      perfil: email.includes('gestor') ? 'gestor' : 'cidadao',
-      criadoEm: new Date().toISOString(),
-    };
-    
-    usuarios.push(novoUsuario);
-    salvar('usuarios', usuarios);
-
-    // 5. Salva a sessão no navegador para mantê-lo logado após criar a conta
-    salvarSessao(novoUsuario.id, true);
-    return semSenha(novoUsuario);
-
-  } catch (error) {
-    console.error("Erro Firebase Cadastro:", error.code);
-    if (error.code === "auth/email-already-in-use") {
-      throw new Error('Este e-mail já está cadastrado.');
-    } else if (error.code === "auth/invalid-email") {
-      throw new Error('O formato do e-mail digitado é inválido.');
-    } else if (error.code === "auth/weak-password") {
-      throw new Error('A senha deve ter no mínimo 6 caracteres.');
-    } else {
-      throw new Error('Não foi possível conectar ao servidor de cadastro.');
-    }
+  const credencialUsuario = await createUserWithEmailAndPassword(auth, email.trim(), senha)
+  const usuarioFirebase = credencialUsuario.user
+  await updateProfile(usuarioFirebase, { displayName: nome.trim() })
+  const dadosUsuario = {
+    id: usuarioFirebase.uid,
+    nome: nome.trim(),
+    email: email.trim().toLowerCase(),
+    perfil: 'cidadao',
+    criadoEm: new Date().toISOString()
   }
+  await setDoc(doc(db, 'users', usuarioFirebase.uid), dadosUsuario)
+  return {
+    id: dadosUsuario.id,
+    nome: dadosUsuario.nome,
+    email: dadosUsuario.email,
+    perfil: dadosUsuario.perfil
+  };
 }
 
 export function sair() {
