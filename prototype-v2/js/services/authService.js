@@ -1,13 +1,7 @@
 /**
- * AUTENTICAÇÃO (SIMULADA)
- * ⚠️ Protótipo: não existe segurança real aqui, porque tudo fica no navegador.
- * Numa versão com backend, o servidor é quem confere a senha e devolve um token.
- *
- * Mesmo assim, não guardamos a senha em texto puro: guardamos o HASH SHA-256.
- * Hash é uma "impressão digital" da senha: dá para comparar, mas não dá para
- * descobrir a senha original a partir dele.
+ * AUTENTICAÇÃO (INTEGRADA AO FIREBASE)
  */
-import { createUserWithEmailAndPassword, updateProfile } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js'
+import { createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js'
 import { doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js'
 import { db } from "../config/firebase.js"
 import { auth } from "../config/firebase.js"
@@ -42,14 +36,12 @@ function lerSessao() {
 
 function salvarSessao(usuarioId, lembrar) {
   const sessao = JSON.stringify({ usuarioId, iniciadaEm: new Date().toISOString() });
-  // "Lembrar de mim": localStorage continua depois de fechar o navegador; sessionStorage não.
   if (lembrar) localStorage.setItem(CHAVE_SESSAO, sessao);
   else sessionStorage.setItem(CHAVE_SESSAO, sessao);
 }
 
 /**
  * Usuário logado agora (ou null).
- * É síncrona de propósito: o header precisa dessa informação imediatamente.
  */
 export function usuarioAtual() {
   const sessao = lerSessao();
@@ -65,17 +57,40 @@ export function ehGestor(usuario = usuarioAtual()) {
 /* ---------- Ações ---------- */
 
 export async function entrar(email, senha, lembrar = false) {
-  await simularLatencia(400);
-  const usuarios = ler('usuarios', []);
-  const usuario = usuarios.find((item) => item.email.toLowerCase() === email.trim().toLowerCase());
-  const hash = await gerarHash(senha);
+  try {
+    const credencialUsuario = await signInWithEmailAndPassword(auth, email, senha);
+    const usuarioFirebase = credencialUsuario.user;
 
-  // Mensagem genérica de propósito: não revelamos se o e-mail existe.
-  if (!usuario || usuario.senhaHash !== hash) {
-    throw new Error('E-mail ou senha incorretos.');
+    const usuarios = ler('usuarios', []);
+    let usuarioLocal = usuarios.find((item) => item.email.toLowerCase() === email.trim().toLowerCase());
+
+    if (!usuarioLocal) {
+      usuarioLocal = {
+        id: usuarioFirebase.uid,
+        nome: usuarioFirebase.displayName || email.split('@')[0],
+        email: email.trim().toLowerCase(),
+        perfil: email.includes('gestor') ? 'gestor' : 'cidadao',
+        criadoEm: new Date().toISOString(),
+      };
+      usuarios.push(usuarioLocal);
+      salvar('usuarios', usuarios);
+    }
+
+    salvarSessao(usuarioLocal.id, lembrar);
+    return semSenha(usuarioLocal);
+
+  } catch (error) {
+    console.error("Erro Firebase Auth:", error.code);
+    if (error.code === "auth/invalid-credential" || error.code === "auth/wrong-password" || error.code === "auth/user-not-found") {
+      throw new Error('E-mail ou senha incorretos.');
+    } else if (error.code === "auth/invalid-email") {
+      throw new Error('O formato do e-mail digitado é inválido.');
+    } else if (error.code === "auth/too-many-requests") {
+      throw new Error('Muitas tentativas bloqueadas. Tente novamente mais tarde.');
+    } else {
+      throw new Error('Não foi possível conectar ao servidor de autenticação.');
+    }
   }
-  salvarSessao(usuario.id, lembrar);
-  return semSenha(usuario);
 }
 
 export async function emailJaCadastrado(email) {
@@ -108,7 +123,6 @@ export function sair() {
   sessionStorage.removeItem(CHAVE_SESSAO);
 }
 
-/** Nome de um usuário pelo id (usado para mostrar o autor de pins e comentários). */
 export function nomeDoUsuario(usuarioId) {
   const usuario = ler('usuarios', []).find((item) => item.id === usuarioId);
   return usuario ? usuario.nome : 'Usuário removido';
