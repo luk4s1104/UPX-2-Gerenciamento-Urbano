@@ -7,9 +7,10 @@
  * Hash é uma "impressão digital" da senha: dá para comparar, mas não dá para
  * descobrir a senha original a partir dele.
  */
-import { createUserWithEmailAndPassword, updateProfile } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js'
-import { doc, setDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js'
-import { db, auth } from "../config/firebase.js"
+import { createUserWithEmailAndPassword, updateProfile } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js'
+import { doc, setDoc } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js'
+import { db } from "../config/firebase.js"
+import { auth } from "../config/firebase.js"
 import { ler, salvar, gerarId, simularLatencia } from './storage.js';
 
 const CHAVE_SESSAO = 'cidadeMelhor:sessao';
@@ -91,7 +92,7 @@ export async function cadastrar({ nome, email, senha }) {
     nome: nome.trim(),
     email: email.trim().toLowerCase(),
     perfil: 'cidadao',
-    criadoEm: new Date().toISOString
+    criadoEm: new Date().toISOString()
   }
   await setDoc(doc(db, 'users', usuarioFirebase.uid), dadosUsuario)
   return {
