@@ -7,6 +7,9 @@
  * Hash é uma "impressão digital" da senha: dá para comparar, mas não dá para
  * descobrir a senha original a partir dele.
  */
+import { createUserWithEmailAndPassword, updateProfile } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-auth.js'
+import { doc, setDoc } from 'https://www.gstatic.com/firebasejs/12.11.0/firebase-firestore.js'
+import { db, auth } from "../config/firebase.js"
 import { ler, salvar, gerarId, simularLatencia } from './storage.js';
 
 const CHAVE_SESSAO = 'cidadeMelhor:sessao';
@@ -80,23 +83,23 @@ export async function emailJaCadastrado(email) {
 }
 
 export async function cadastrar({ nome, email, senha }) {
-  await simularLatencia(500);
-  if (await emailJaCadastrado(email)) {
-    throw new Error('Este e-mail já está cadastrado.');
-  }
-  const usuarios = ler('usuarios', []);
-  const novoUsuario = {
-    id: gerarId('u'),
+  const credencialUsuario = await createUserWithEmailAndPassword(auth, email.trim(), senha)
+  const usuarioFirebase = credencialUsuario.user
+  await updateProfile(usuarioFirebase, { displayName: nome.trim() })
+  const dadosUsuario = {
+    id: usuarioFirebase.uid,
     nome: nome.trim(),
     email: email.trim().toLowerCase(),
     perfil: 'cidadao',
-    senhaHash: await gerarHash(senha),
-    criadoEm: new Date().toISOString(),
+    criadoEm: new Date().toISOString
+  }
+  await setDoc(doc(db, 'users', usuarioFirebase.uid), dadosUsuario)
+  return {
+    id: dadosUsuario.id,
+    nome: dadosUsuario.nome,
+    email: dadosUsuario.email,
+    perfil: dadosUsuario.perfil
   };
-  usuarios.push(novoUsuario);
-  salvar('usuarios', usuarios);
-  salvarSessao(novoUsuario.id, true);
-  return semSenha(novoUsuario);
 }
 
 export function sair() {
