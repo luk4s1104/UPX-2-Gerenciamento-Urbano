@@ -4,17 +4,18 @@
  * A página "Sobre nós" é montada automaticamente a partir desta lista.
  */
 export const EQUIPE = [
-  { nome: 'Integrante 1', funcao: 'Desenvolvimento front-end', ra: 'RA 000000' },
-  { nome: 'Integrante 2', funcao: 'UI/UX e design', ra: 'RA 000000' },
-  { nome: 'Integrante 3', funcao: 'Mapa e geolocalização', ra: 'RA 000000' },
-  { nome: 'Integrante 4', funcao: 'Pesquisa e conteúdo ODS', ra: 'RA 000000' },
-  { nome: 'Integrante 5', funcao: 'Documentação e testes', ra: 'RA 000000' },
+  { nome: 'Lucas Ricci Arruda Leite', ra: 'RA 263641' },
+  { nome: 'Daniel Martins Belculfine', ra: 'RA 263336' },
+  { nome: 'Thiago Sampaio Ferreira', ra: 'RA 263610' },
+  { nome: 'Leonard Modesto Rosa', ra: 'RA 263414' },
+  { nome: 'Fabricio Rodrigues ', ra: 'RA 263400' },
+  { nome: 'João Victor Athayde Grilo', ra: 'RA 210491' },
+  { nome: 'Leandro Gustavo Pacheco Cruz', ra: 'RA 263938' },
 ];
 
 export const INFO_ACADEMICA = {
   projeto: 'UPX 2 – Desenvolvimento Sustentável',
-  instituicao: 'Nome da faculdade',
+  instituicao: 'FACENS',
   curso: 'Engenharia da Computação',
-  orientador: 'Nome do(a) professor(a)',
   ano: new Date().getFullYear(),
 };
